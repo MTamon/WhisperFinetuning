@@ -1,4 +1,5 @@
 import sys
+from tqdm import tqdm
 from datasets import DatasetDict
 from transformers import AutoProcessor
 from transformers import Seq2SeqTrainingArguments
@@ -67,6 +68,13 @@ with open("out/kotoba-whisper-v1.0/pre_metrics.json", mode="w", encoding="utf-8"
     train_wer = trainer.predict(prepared_datasets["train"]).metrics["test_wer"]
     valid_wer = trainer.predict(prepared_datasets["valid"]).metrics["test_wer"]
     f.write(f"train_wer: {train_wer}\nvalid_wer: {valid_wer}")
+# valid の推論結果を個別に保存
+with open("out/kotoba-whisper-v1.0/pre_valid_inference.csv", mode="w", encoding="utf-8") as f:
+    f.write("No, pred, ref\n")
+    desc = "before fine-tuning verification"
+    for i, pred in enumerate(tqdm(trainer.predict(prepared_datasets["valid"]).predictions[:200]), desc=desc):
+        ref = prepared_datasets["valid"][i]["correct"]
+        f.write(f"{i}, {pred['pred']}, {ref}\n")
 
 ################################
 trainer.train()
@@ -77,6 +85,13 @@ with open("out/kotoba-whisper-v1.0/post_metrics.json", mode="w", encoding="utf-8
     train_wer = trainer.predict(prepared_datasets["train"]).metrics["test_wer"]
     valid_wer = trainer.predict(prepared_datasets["valid"]).metrics["test_wer"]
     f.write(f"train_wer: {train_wer}\nvalid_wer: {valid_wer}")
+# valid の推論結果を個別に保存
+with open("out/kotoba-whisper-v1.0/post_valid_inference.csv", mode="w", encoding="utf-8") as f:
+    f.write("No, pred, ref\n")
+    desc = "after fine-tuning verification"
+    for i, pred in enumerate(tqdm(trainer.predict(prepared_datasets["valid"]).predictions[:200]), desc=desc):
+        ref = prepared_datasets["valid"][i]["correct"]
+        f.write(f"{i}, {pred['pred']}, {ref}\n")
 
 ################################
 trainer.save_model("models")
